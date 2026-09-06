@@ -10,8 +10,9 @@
     "model_connection_probe": "passed",
     "demo_submission_and_real_model_result": "passed",
     "workspace_branding_save_and_restore": "passed",
-    "platform_app_forms_and_callbacks": "inspected",
-    "responsive_layout": "visually checked at narrow browser width"
+    "platform_app_forms_and_callbacks": "Meta credential form saved in isolated browser fixture; live credentials unavailable",
+    "responsive_layout": "Five viewport widths checked; desktop and phone visually inspected",
+    "mobile_keyboard": "Focus containment, Escape dismissal and reduced motion passed"
   },
   "local_model": "Qwen3-4B Q4_K_M via llama.cpp Vulkan",
   "live_case_seconds": [
@@ -27,14 +28,23 @@
     "Domain DNS and public TLS certificate issuance require a customer deployment."
   ],
   "readiness": "Working English-text pilot; integration checks do not establish broad factual accuracy or enterprise readiness.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "live_demo": "passed",
-  "container_validation": "passed: real image, generated bootstrap, non-root runtime, and persistent workspace after restart",
-  "ci_url": "https://github.com/Billioncodes001/social-claim-verifier/actions/runs/34034306326",
-  "tested_code_commit": "1b113c1373c283d966e48334087b0c5b15b2996b",
+  "container_validation": "passed: real multi-stage image, React assets, generated bootstrap, non-root runtime, and persistence after restart",
+  "ci_url": "https://github.com/Billioncodes001/social-claim-verifier/actions/runs/34035989038",
+  "tested_code_commit": "143465470cf381b9d486b67606da9da79706f9e4",
   "ci_regression": {
     "windows": "74 passed",
     "linux": "74 passed"
   },
-  "callback_log_redaction": "passed against running Uvicorn server"
+  "callback_log_redaction": "passed against running Uvicorn server",
+  "ci_browser": "8 passed on Linux; 8 passed locally on Windows",
+  "frontend_validation": "8 browser scenarios; 320/390/768/1024/1440 px; zero automated WCAG A/AA violations on desktop and phone",
+  "live_redesigned_demo": {
+    "passed": true,
+    "elapsed_ms": 12931,
+    "verdict": "supported",
+    "source": "NASA",
+    "model": "qwen3-4b-local"
+  }
 }

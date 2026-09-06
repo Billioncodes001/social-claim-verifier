@@ -1,8 +1,9 @@
 {
-  "version": "0.2.0",
+  "version": "0.3.0",
   "passed": true,
   "checks": [
     "actual image startup",
+    "built React interface and static assets",
     "automatic admin bootstrap",
     "setup endpoint closed",
     "authenticated UI APIs",
@@ -10,5 +11,7 @@
     "unconfigured agents reported not ready"
   ],
   "restart_verified": true,
-  "limits": "No social credentials or model API were supplied to this container test."
+  "limits": "No social credentials or model API were supplied to this container test.",
+  "ci_url": "https://github.com/Billioncodes001/social-claim-verifier/actions/runs/34035989038",
+  "tested_code_commit": "143465470cf381b9d486b67606da9da79706f9e4"
 }

@@ -28,5 +28,7 @@
     "reduced motion",
     "horizontal overflow and rendered screenshot inspection"
   ],
-  "fixture_scope": "Temporary backend with synthetic accounts, posts and evidence. Live local-model demo recorded separately."
+  "fixture_scope": "Temporary backend with synthetic accounts, posts and evidence. Live local-model demo recorded separately.",
+  "ci_url": "https://github.com/Billioncodes001/social-claim-verifier/actions/runs/34035989038",
+  "tested_code_commit": "143465470cf381b9d486b67606da9da79706f9e4"
 }
