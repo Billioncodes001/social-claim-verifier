@@ -7,7 +7,11 @@
     "submit_and_live_result": "passed",
     "review_decision": "passed",
     "agent_assignment": "passed",
-    "model_connection_probe": "passed"
+    "model_connection_probe": "passed",
+    "demo_submission_and_real_model_result": "passed",
+    "workspace_branding_save_and_restore": "passed",
+    "platform_app_forms_and_callbacks": "inspected",
+    "responsive_layout": "visually checked at narrow browser width"
   },
   "local_model": "Qwen3-4B Q4_K_M via llama.cpp Vulkan",
   "live_case_seconds": [
@@ -25,5 +29,12 @@
   "readiness": "Working English-text pilot; integration checks do not establish broad factual accuracy or enterprise readiness.",
   "version": "0.2.0",
   "live_demo": "passed",
-  "container_validation": "See Verify and install GitHub Actions; pending first run"
+  "container_validation": "passed: real image, generated bootstrap, non-root runtime, and persistent workspace after restart",
+  "ci_url": "https://github.com/Billioncodes001/social-claim-verifier/actions/runs/34034306326",
+  "tested_code_commit": "1b113c1373c283d966e48334087b0c5b15b2996b",
+  "ci_regression": {
+    "windows": "74 passed",
+    "linux": "74 passed"
+  },
+  "callback_log_redaction": "passed against running Uvicorn server"
 }

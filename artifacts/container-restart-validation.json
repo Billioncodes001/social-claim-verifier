@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "passed": true,
+  "checks": [
+    "actual image startup",
+    "automatic admin bootstrap",
+    "setup endpoint closed",
+    "authenticated UI APIs",
+    "workspace persistence",
+    "unconfigured agents reported not ready"
+  ],
+  "restart_verified": true,
+  "limits": "No social credentials or model API were supplied to this container test."
+}
