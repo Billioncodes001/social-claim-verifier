@@ -1,0 +1,40 @@
+{
+  "schema_version": "0.1-draft",
+  "example_only": true,
+  "tenant_id": "demo-platform",
+  "assessment_id": "assessment-demo-001",
+  "content_id": "post-demo-001",
+  "content_version": "1",
+  "state": "awaiting_review",
+  "claims": [
+    {
+      "claim_id": "claim-demo-date",
+      "original_span": "This clip shows flooding in City A today.",
+      "proposition": "The clip was recorded on the post's publication date.",
+      "outcome": "unresolved",
+      "reason": "The example contains no verified original footage or source evidence.",
+      "evidence_ids": [],
+      "missing_evidence": ["Verified capture date", "Original footage source"],
+      "calibrated_probability": null
+    },
+    {
+      "claim_id": "claim-demo-location",
+      "original_span": "This clip shows flooding in City A today.",
+      "proposition": "The clip depicts flooding in City A.",
+      "outcome": "unresolved",
+      "reason": "No location evidence has been evaluated in this synthetic example.",
+      "evidence_ids": [],
+      "missing_evidence": ["Verified location evidence"],
+      "calibrated_probability": null
+    }
+  ],
+  "media_processing": {"status": "not_processed", "authenticity_verdict": null},
+  "evidence": [],
+  "policy": {
+    "version": "demo-review-only-0.1",
+    "recommended_action": "request_evidence",
+    "eligible_strike": false,
+    "external_action_authorized": false
+  },
+  "execution_receipt": null
+}

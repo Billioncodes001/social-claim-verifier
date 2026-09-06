@@ -1,0 +1,20 @@
+services:
+  verifier:
+    build: .
+    ports:
+      - "127.0.0.1:8791:8791"
+    volumes:
+      - verifier-data:/data
+    environment:
+      VERIFIER_ALLOWED_HOSTS: "localhost,127.0.0.1"
+      VERIFIER_DISABLE_WEB_SETUP: "1"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+volumes:
+  verifier-data:

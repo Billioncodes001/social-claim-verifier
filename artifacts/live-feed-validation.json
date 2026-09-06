@@ -1,0 +1,19 @@
+{
+  "source": "https://www.nasa.gov/feed/",
+  "first": "RSS: 1 entries read; 1 new revisions; 1 delivered.",
+  "second": "RSS: 1 entries read; 0 new revisions; 0 delivered.",
+  "passed": true,
+  "token_revoked": true,
+  "analysis": {
+    "case_id": "fc89adae20174e0291e9d907e0e42e9c",
+    "status": "needs_review",
+    "error": null,
+    "verdicts": [
+      "unresolved",
+      "unresolved",
+      "unresolved",
+      "unresolved",
+      "unresolved"
+    ]
+  }
+}

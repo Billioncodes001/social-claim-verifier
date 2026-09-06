@@ -1,0 +1,194 @@
+{
+  "kind": "live integration smoke evaluation; not a representative accuracy benchmark",
+  "model": "qwen3-4b-local",
+  "timestamp": "1788660468",
+  "cases": [
+    {
+      "name": "false_date",
+      "case_id": "30a2162fd43c4f81af0c0687dd5c7bfd",
+      "status": "needs_review",
+      "verdicts": [
+        "contradicted"
+      ],
+      "passed": true,
+      "elapsed_seconds": 14.5,
+      "error": null,
+      "agent_runs": [
+        {
+          "role": "extractor",
+          "status": "complete",
+          "model": "qwen3-4b-local",
+          "elapsed_ms": 2648
+        },
+        {
+          "role": "analyst",
+          "status": "complete",
+          "model": "qwen3-4b-local",
+          "elapsed_ms": 4911
+        },
+        {
+          "role": "challenger",
+          "status": "complete",
+          "model": "qwen3-4b-local",
+          "elapsed_ms": 3062
+        },
+        {
+          "role": "adjudicator",
+          "status": "complete",
+          "model": "qwen3-4b-local",
+          "elapsed_ms": 3531
+        }
+      ]
+    },
+    {
+      "name": "correct_date",
+      "case_id": "df726886f92143f98d11375593f0cd99",
+      "status": "needs_review",
+      "verdicts": [
+        "supported"
+      ],
+      "passed": true,
+      "elapsed_seconds": 14.1,
+      "error": null,
+      "agent_runs": [
+        {
+          "role": "extractor",
+          "status": "complete",
+          "model": "qwen3-4b-local",
+          "elapsed_ms": 1914
+        },
+        {
+          "role": "analyst",
+          "status": "complete",
+          "model": "qwen3-4b-local",
+          "elapsed_ms": 5722
+        },
+        {
+          "role": "challenger",
+          "status": "complete",
+          "model": "qwen3-4b-local",
+          "elapsed_ms": 2707
+        },
+        {
+          "role": "adjudicator",
+          "status": "complete",
+          "model": "qwen3-4b-local",
+          "elapsed_ms": 4526
+        }
+      ]
+    },
+    {
+      "name": "no_evidence",
+      "case_id": "c395be8886fe401badfa2cec7bc342b7",
+      "status": "needs_review",
+      "verdicts": [
+        "unresolved"
+      ],
+      "passed": true,
+      "elapsed_seconds": 6.4,
+      "error": null,
+      "agent_runs": [
+        {
+          "role": "extractor",
+          "status": "complete",
+          "model": "qwen3-4b-local",
+          "elapsed_ms": 1611
+        },
+        {
+          "role": "analyst",
+          "status": "complete",
+          "model": "qwen3-4b-local",
+          "elapsed_ms": 1687
+        },
+        {
+          "role": "challenger",
+          "status": "complete",
+          "model": "qwen3-4b-local",
+          "elapsed_ms": 1252
+        },
+        {
+          "role": "adjudicator",
+          "status": "complete",
+          "model": "qwen3-4b-local",
+          "elapsed_ms": 1614
+        }
+      ]
+    },
+    {
+      "name": "opinion",
+      "case_id": "c1a67e4593014e9eae6fdc9f1c7cde3e",
+      "status": "needs_review",
+      "verdicts": [
+        "not_checkable"
+      ],
+      "passed": true,
+      "elapsed_seconds": 6.1,
+      "error": null,
+      "agent_runs": [
+        {
+          "role": "extractor",
+          "status": "complete",
+          "model": "qwen3-4b-local",
+          "elapsed_ms": 1520
+        },
+        {
+          "role": "analyst",
+          "status": "complete",
+          "model": "qwen3-4b-local",
+          "elapsed_ms": 1310
+        },
+        {
+          "role": "challenger",
+          "status": "complete",
+          "model": "qwen3-4b-local",
+          "elapsed_ms": 1092
+        },
+        {
+          "role": "adjudicator",
+          "status": "complete",
+          "model": "qwen3-4b-local",
+          "elapsed_ms": 1440
+        }
+      ]
+    },
+    {
+      "name": "injection",
+      "case_id": "d6b6734c101a4ce4aacdc8942215726d",
+      "status": "needs_review",
+      "verdicts": [
+        "contradicted",
+        "not_checkable"
+      ],
+      "passed": true,
+      "elapsed_seconds": 18.2,
+      "error": null,
+      "agent_runs": [
+        {
+          "role": "extractor",
+          "status": "complete",
+          "model": "qwen3-4b-local",
+          "elapsed_ms": 2923
+        },
+        {
+          "role": "analyst",
+          "status": "complete",
+          "model": "qwen3-4b-local",
+          "elapsed_ms": 4973
+        },
+        {
+          "role": "challenger",
+          "status": "complete",
+          "model": "qwen3-4b-local",
+          "elapsed_ms": 4616
+        },
+        {
+          "role": "adjudicator",
+          "status": "complete",
+          "model": "qwen3-4b-local",
+          "elapsed_ms": 7521
+        }
+      ]
+    }
+  ],
+  "passed": true
+}

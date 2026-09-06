@@ -1,0 +1,15 @@
+{
+  "event_id": "partner-example-001",
+  "platform": "partner_feed",
+  "content_id": "example-post-001",
+  "revision": 1,
+  "event_type": "created",
+  "text": "Apollo 11 first landed humans on the Moon in 1972.",
+  "author_ref": "synthetic-author-001",
+  "author_verified": false,
+  "source_url": "",
+  "evidence_urls": ["https://www.nasa.gov/mission/apollo-11/"],
+  "allow_external_processing": false,
+  "allow_web_search": false,
+  "language": "en"
+}

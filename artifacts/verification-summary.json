@@ -1,0 +1,26 @@
+{
+  "regression_tests_passed": 56,
+  "live_model_cases_passed": 5,
+  "live_rss_intake_and_analysis": "passed",
+  "browser": {
+    "sign_in": "passed",
+    "submit_and_live_result": "passed",
+    "review_decision": "passed",
+    "agent_assignment": "passed",
+    "model_connection_probe": "passed"
+  },
+  "local_model": "Qwen3-4B Q4_K_M via llama.cpp Vulkan",
+  "live_case_seconds": [
+    14.5,
+    14.1,
+    6.4,
+    6.1,
+    18.2
+  ],
+  "not_live_tested": [
+    "Hosted OpenAI/Anthropic/Tavily credentials were unavailable; adapters were protocol-tested.",
+    "X requires customer credentials and configured rules; adapter was fixture-tested.",
+    "Docker runtime unavailable; container execution not tested."
+  ],
+  "readiness": "Working English-text pilot; integration checks do not establish broad factual accuracy or enterprise readiness."
+}
