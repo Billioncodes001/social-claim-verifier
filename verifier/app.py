@@ -25,7 +25,7 @@ from .pipeline import Pipeline
 from .policy import account_state, can_confirm, DEFAULT
 from .network import validate_url, NetworkError, pinned_url
 
-STATIC = Path(__file__).parent / 'static'
+STATIC = Path(__file__).parent / 'static' / 'dist'
 
 def create_app(data_dir=None, run_workers=True):
     root = Path(data_dir or os.environ.get('VERIFIER_DATA_DIR', '.runtime')).resolve()
@@ -47,7 +47,7 @@ def create_app(data_dir=None, run_workers=True):
         await pipeline.stop()
         await social.stop()
 
-    app = FastAPI(title='Claim Verifier', version='0.2.0', lifespan=lifespan,
+    app = FastAPI(title='Claim Verifier', version='0.3.0', lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.db, app.state.vault, app.state.pipeline = db, vault, pipeline
     app.state.social = social
@@ -123,12 +123,12 @@ def create_app(data_dir=None, run_workers=True):
     @app.get('/healthz')
     async def health():
         db.one('SELECT 1')
-        return {'status': 'ok', 'version': '0.2.0'}
+        return {'status': 'ok', 'version': '0.3.0'}
 
     @app.get('/readyz')
     async def ready():
         state = readiness(db)
-        return JSONResponse({'ready':state['ready'],'version':'0.2.0'}, status_code=200 if state['ready'] else 503)
+        return JSONResponse({'ready':state['ready'],'version':'0.3.0'}, status_code=200 if state['ready'] else 503)
 
     @app.get('/api/workspace')
     async def workspace(actor=Depends(user)):
@@ -391,7 +391,7 @@ def create_app(data_dir=None, run_workers=True):
         value = await case_detail(case_id, actor)
         return JSONResponse(value, headers={'Content-Disposition': f'attachment; filename="case-{case_id}.json"'})
 
-    app.mount('/assets', StaticFiles(directory=STATIC), name='assets')
+    app.mount('/assets', StaticFiles(directory=STATIC / 'assets', check_dir=False), name='assets')
     app.include_router(social_router(social,user,admin))
 
     @app.get('/')

@@ -1,6 +1,7 @@
 """Exercise an actual generated installation over HTTP, without printing credentials."""
 import argparse
 import json
+import re
 from pathlib import Path
 import time
 import httpx
@@ -22,7 +23,16 @@ def main():
             except httpx.HTTPError:pass
             time.sleep(1)
         else:raise RuntimeError('Container did not become healthy')
-        assert response.json()['version']=='0.2.0'
+        assert response.json()['version']=='0.3.0'
+        page=client.get('/')
+        assert page.status_code==200 and 'Claim Verifier' in page.text
+        assets=re.findall(r'(?:src|href)="(/assets/[^"<>]+)"',page.text)
+        assert any(asset.endswith('.js') for asset in assets)
+        assert any(asset.endswith('.css') for asset in assets)
+        for asset in assets+['/assets/apollo-earthrise.jpg','/assets/apollo-lunar-module.jpg']:
+            asset_response=client.get(asset)
+            assert asset_response.status_code==200 and asset_response.content, asset
+            assert 'text/html' not in asset_response.headers.get('content-type',''), asset
         assert client.get('/api/demo').status_code==401
         assert client.get('/api/auth/status').json()['setup_required'] is False
         secret=(bundle/'secrets/admin_password').read_text().strip()
@@ -39,7 +49,7 @@ def main():
         response=client.put('/api/workspace',json={**workspace['workspace'],'organization':'Container validation workspace'})
         assert response.status_code==200
         assert client.get('/api/workspace').json()['workspace']['organization']=='Container validation workspace'
-        report={'version':'0.2.0','passed':True,'checks':['actual image startup','automatic admin bootstrap','setup endpoint closed',
+        report={'version':'0.3.0','passed':True,'checks':['actual image startup','built React interface and static assets','automatic admin bootstrap','setup endpoint closed',
             'authenticated UI APIs','workspace persistence','unconfigured agents reported not ready'],
             'restart_verified':args.after_restart,
             'limits':'No social credentials or model API were supplied to this container test.'}

@@ -18,17 +18,41 @@ jobs:
           python-version: '3.13'
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
+      - run: npm ci
+      - run: npm run build
       - run: python -m pip install -r requirements.lock
       - run: python -m pip install -e ".[test]"
       - run: python -m pytest -q --tb=short --junitxml=artifacts/ci-regression.xml
-      - run: node --check verifier/static/app.js
-      - run: node --check verifier/static/demo.js
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: regression-${{ matrix.os }}
           path: artifacts/ci-regression.xml
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip install -e .
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps --no-shell chromium
+      - run: npm run test:ui
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-validation
+          path: |
+            artifacts/ui-regression.json
+            artifacts/ui-demo-*.png
+            test-results/
   container:
     runs-on: ubuntu-latest
     steps:

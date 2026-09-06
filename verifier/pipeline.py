@@ -124,7 +124,7 @@ class Pipeline:
             summary = ', '.join(f'{count} {verdict}' for verdict, count in counts.items()) + '. Review the evidence and context for each claim.' if counts else 'No atomic claims were extracted. A reviewer should check the original content.'
             result = {'summary': summary, 'agent_summary': final['summary'], 'claims': extraction['claims'], 'judgments': final['judgments'],
                       'evidence': evidence, 'challenger': challenge, 'limitations': list(dict.fromkeys(notices)),
-                      'elapsed_ms': int((time.monotonic() - started)*1000), 'pipeline_version': '0.2.0',
+                      'elapsed_ms': int((time.monotonic() - started)*1000), 'pipeline_version': '0.3.0',
                       'external_actions_enabled': False, 'eligible_strike': False}
             self.db.execute("UPDATE cases SET status='needs_review',stage='Ready for review',result=?,error=NULL,updated=? WHERE id=? AND status='processing'",
                             (dumps(result), now(), case_id))

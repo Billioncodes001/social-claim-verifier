@@ -12,7 +12,7 @@ def build_bundle(output, *, domain='', port=8791, username='admin', project_root
     if domain and (len(domain)>253 or not re.fullmatch(r'(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{1,62}', domain)):
         raise ValueError('Use a DNS hostname such as claims.example.com, without a scheme, port or path')
     if not 1024<=port<=65535: raise ValueError('Port must be between 1024 and 65535')
-    if not re.fullmatch(r'[A-Za-z0-9_-]{3,80}',username): raise ValueError('Use 3–80 letters, numbers, underscores or hyphens for the administrator name')
+    if not re.fullmatch(r'[A-Za-z0-9_-]{3,80}',username): raise ValueError('Use 3-80 letters, numbers, underscores or hyphens for the administrator name')
     output = Path(output).resolve()
     project_root = Path(project_root or Path(__file__).resolve().parents[1]).resolve()
     # Refuse to replace any bundle: its secrets may already encrypt customer data.
@@ -25,7 +25,7 @@ def build_bundle(output, *, domain='', port=8791, username='admin', project_root
         with os.fdopen(os.open(secret_dir/name,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600),'w',encoding='utf-8') as handle:
             handle.write(value+'\n')
     origin='https://'+domain if domain else 'http://127.0.0.1:'+str(port)
-    app={'build':{'context':str(project_root)},'image':'claim-verifier:0.2.0',
+    app={'build':{'context':str(project_root)},'image':'claim-verifier:0.3.0',
          'depends_on':{'initialize':{'condition':'service_completed_successfully'}},
          'volumes':['verifier-data:/data'],
          'environment':{'VERIFIER_PUBLIC_URL':origin,'VERIFIER_ALLOWED_HOSTS':','.join(filter(None,[domain,'localhost','127.0.0.1'])),
@@ -35,7 +35,7 @@ def build_bundle(output, *, domain='', port=8791, username='admin', project_root
          'cap_drop':['ALL'],'security_opt':['no-new-privileges:true']}
     if not domain: app['ports']=['127.0.0.1:'+str(port)+':8791']
     config={'name':'claim-verifier-'+secrets.token_hex(3),'services':{
-        'initialize':{'build':{'context':str(project_root)},'image':'claim-verifier:0.2.0','user':'0:0',
+        'initialize':{'build':{'context':str(project_root)},'image':'claim-verifier:0.3.0','user':'0:0',
                       'entrypoint':['python','-m','verifier.initialize'],'network_mode':'none',
                       'volumes':['verifier-data:/data'],'secrets':['admin_password','master_key'],
                       'environment':{'VERIFIER_BOOTSTRAP_PASSWORD_FILE':'/run/secrets/admin_password',
@@ -52,7 +52,7 @@ def build_bundle(output, *, domain='', port=8791, username='admin', project_root
         config['volumes'].update({'caddy-data':{},'caddy-config':{}})
     # JSON is a YAML subset accepted by Docker Compose, avoiding interpolation/quoting mistakes.
     (output/'compose.yaml').write_text(json.dumps(config,indent=2)+'\n',encoding='utf-8')
-    (output/'installation.json').write_text(json.dumps({'url':origin,'username':username,'version':'0.2.0'},indent=2)+'\n',encoding='utf-8')
+    (output/'installation.json').write_text(json.dumps({'url':origin,'username':username,'version':'0.3.0'},indent=2)+'\n',encoding='utf-8')
     (output/'START.txt').write_text(
         'Start: docker compose -f "'+str(output/'compose.yaml')+'" up -d --build\n'
         'Open: '+origin+'\nAdministrator: '+username+'\n'

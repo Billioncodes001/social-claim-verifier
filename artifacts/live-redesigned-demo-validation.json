@@ -1,0 +1,18 @@
+{
+  "version": "0.3.0",
+  "passed": true,
+  "kind": "Real React form submission, local model and retrieved NASA source; no provider fixtures",
+  "case_id": "596e7e3e0140446e8a6ddf7c313bacdc",
+  "duplicate": false,
+  "status": "needs_review",
+  "verdicts": [
+    "supported"
+  ],
+  "elapsed_ms": 12931,
+  "model": "qwen3-4b-local",
+  "source_urls": [
+    "https://www.nasa.gov/mission/apollo-11/"
+  ],
+  "demo_strikes_disabled": true,
+  "browser_runtime_errors": []
+}

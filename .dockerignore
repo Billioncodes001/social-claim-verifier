@@ -2,6 +2,10 @@
 .venv
 .runtime
 .deployment
+node_modules
+verifier/static/dist
+test-results
+playwright-report
 .env
 .env.*
 .pytest_cache

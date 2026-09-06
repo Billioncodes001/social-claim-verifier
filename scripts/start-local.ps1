@@ -2,6 +2,12 @@ param([switch]$DownloadModel)
 $ErrorActionPreference = 'Stop'
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location -LiteralPath $projectRoot
+if (-not (Test-Path -LiteralPath 'verifier/static/dist/index.html')) {
+    npm ci
+    if ($LASTEXITCODE -ne 0) { throw 'Node.js 22.12+ and npm are required to build the web app.' }
+    npm run build
+    if ($LASTEXITCODE -ne 0) { throw 'Web app build failed.' }
+}
 $pythonPath = Join-Path $projectRoot '.venv/Scripts/python.exe'
 if (-not (Test-Path -LiteralPath $pythonPath)) {
     python -m venv .venv

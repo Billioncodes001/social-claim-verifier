@@ -2,7 +2,7 @@
 
 A working, privately deployed fact-checking workspace for platform moderation teams. Four AI roles extract claims, analyze retrieved evidence, challenge weak reasoning and produce a cited assessment. Reviewers inspect sources and record decisions or appeals.
 
-**Release status: v0.2 customer pilot.** Includes customizable platform policies, a real post demo, customer-owned social OAuth apps and a generated server installation. This is not yet an enterprise-scale moderation product or a validated general-purpose truth detector.
+**Release status: v0.3 customer pilot.** Includes a React/TypeScript workspace, Tailwind CSS design system, accessible motion, customizable platform policies, a real post demo, customer-owned social OAuth apps and a generated server installation. This is not yet an enterprise-scale moderation product or a validated general-purpose truth detector.
 
 ## Install on a customer's server
 
@@ -44,6 +44,8 @@ Demo investigations cannot create account strikes. Reviewers see only their own 
 
 ## Run on Windows
 
+Install Python 3.11+ and Node.js 22.12+ (Node 24 is used in CI). The startup script builds the frontend automatically on the first run.
+
 ```powershell
 git clone https://github.com/Billioncodes001/social-claim-verifier.git
 cd social-claim-verifier
@@ -58,13 +60,15 @@ Stop the two services with `scripts/stop-local.ps1`. It verifies each PID's exec
 
 ## Connect your AI APIs
 
-Python 3.11+ is required. No Node build is needed.
+Python 3.11+ and Node.js 22.12+ are required for source development. Docker builds the frontend in its own Node stage; the final runtime requires only Python.
 
 ```sh
 python -m venv .venv
 # Activate the environment using your shell's normal command.
 python -m pip install -r requirements.lock
 python -m pip install -e '.[test]'
+npm ci
+npm run build
 claim-verifier serve --port 8791
 ```
 
@@ -142,11 +146,22 @@ Back up the database and key together using encrypted, retention-controlled stor
 ```sh
 python -m pytest -q
 python scripts/live_validation.py
-node --check verifier/static/app.js
-node --check verifier/static/demo.js
+npm run build
+npx playwright install --no-shell chromium
+npm run test:ui
 ```
 
 Tests cover authorization, secret handling, body/network limits, provider protocols, fallbacks, citation integrity, abstention, claim completeness, idempotency, edits, deletion races, incidents, appeals, restart recovery, connector delivery, OAuth session binding/replay, connected-post normalization, polling consent, demo privacy/quotas, platform policies, schema migration and server provisioning. GitHub Actions runs the regression suite on Windows and Linux plus an actual Docker installation smoke test.
+
+The browser suite runs against an isolated temporary backend with **synthetic** accounts and evidence, never customer data. It exercises every route, post intake, connected post retrieval, monitoring, branding, model assignment, Meta configuration, evidence inspection, reviewer decisions, permission boundaries, mobile keyboard navigation, reduced motion and desktop/phone accessibility. Layouts are checked at 320, 390, 768, 1024 and 1440 pixels. Browser fixtures test interface behavior; they do not establish live platform access or factual accuracy.
+
+## Frontend development
+
+`frontend/src/` contains React 19 and strict TypeScript components, Tailwind CSS 4, Motion transitions, TanStack Query and Lucide icons. DM Sans and Newsreader fonts and the photography are served locally. Motion respects the operating system's reduced-motion preference. Mobile navigation has keyboard focus containment and Escape dismissal.
+
+Use `npm run dev` with the Python service running on port 8791 for hot reload. Use `npm run build` after changes to update the assets served by Python. Compiled files are generated under `verifier/static/dist/` and excluded from Git. The multi-stage Docker build generates the same production bundle. Branding and all existing server-side workflows remain configurable.
+
+The Apollo 11 images illustrate the supplied NASA example: [Earth above the lunar horizon, AS11-44-6550](https://images.nasa.gov/details/as11-44-6550) and [Lunar module ascent stage, AS11-44-6642](https://images.nasa.gov/details/as11-44-6642). Images are credited to NASA and used as factual editorial illustrations under its [media guidelines](https://www.nasa.gov/nasa-brand-center/images-and-media/); no NASA endorsement is implied. Bundled font licenses are in `frontend/public/assets/font-licenses.txt`.
 
 [artifacts/live-validation.json](artifacts/live-validation.json) records real HTTP/model/source runs: a false historical date, a correct date, missing evidence, opinion and an embedded malicious instruction. The script creates a development owner only in a fresh workspace and otherwise uses saved development credentials. Run it only in development. [artifacts/live-feed-validation.json](artifacts/live-feed-validation.json) records the separate live RSS intake check.
 

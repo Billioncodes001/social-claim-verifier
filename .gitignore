@@ -1,6 +1,12 @@
 .venv/
 .runtime/
 .deployment/
+node_modules/
+verifier/static/dist/
+playwright-report/
+test-results/
+artifacts/ui-*.png
+artifacts/ui-regression.json
 __pycache__/
 .pytest_cache/
 *.egg-info/

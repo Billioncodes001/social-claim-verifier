@@ -1,0 +1,32 @@
+{
+  "version": "0.3.0",
+  "passed": true,
+  "browser_scenarios_passed": 8,
+  "backend_tests_passed": 74,
+  "browser_duration_ms": 18784,
+  "responsive_widths_px": [
+    320,
+    390,
+    768,
+    1024,
+    1440
+  ],
+  "axe_wcag_a_aa_violations": {
+    "desktop": 0,
+    "phone": 0
+  },
+  "checks": [
+    "all eleven workspace routes",
+    "demo intake and case navigation",
+    "connected post fetch and monitoring consent",
+    "workspace branding and platform policies",
+    "model connection and role assignment",
+    "Meta credential forms",
+    "source inspection and reviewer decision",
+    "admin permission boundary and logout",
+    "mobile focus containment and Escape dismissal",
+    "reduced motion",
+    "horizontal overflow and rendered screenshot inspection"
+  ],
+  "fixture_scope": "Temporary backend with synthetic accounts, posts and evidence. Live local-model demo recorded separately."
+}
