@@ -1,6 +1,9 @@
 .git
 .venv
 .runtime
+.deployment
+.env
+.env.*
 .pytest_cache
 __pycache__
 **/__pycache__

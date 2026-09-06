@@ -2,8 +2,14 @@
 import asyncio
 import ipaddress
 import socket
+import logging
 from urllib.parse import urlsplit, urljoin
 import httpx
+
+# Some OAuth providers require credentials in token-exchange query parameters.
+# HTTP client diagnostics must never emit those URLs.
+logging.getLogger('httpx').setLevel(logging.WARNING)
+logging.getLogger('httpcore').setLevel(logging.WARNING)
 
 class NetworkError(Exception):
     pass
@@ -44,12 +50,13 @@ async def pinned_url(url, local=False):
     target = httpx.URL(url).copy_with(host=address)
     return target, parts.hostname, parts.netloc
 
-async def request(method, url, *, body=None, headers=None, local=False, max_bytes=2_000_000, timeout=90):
+async def request(method, url, *, body=None, form=None, headers=None, local=False, max_bytes=2_000_000, timeout=90):
     target, host, host_header = await pinned_url(url, local)
     request_headers = {'User-Agent': 'ClaimVerifier/0.1 (+evidence research)', 'Host': host_header, **(headers or {})}
     try:
         async with httpx.AsyncClient(trust_env=False, timeout=httpx.Timeout(timeout, connect=15), follow_redirects=False) as client:
-            async with client.stream(method, target, headers=request_headers, json=body,
+            payload = {'data':form} if form is not None else {'json':body}
+            async with client.stream(method, target, headers=request_headers, **payload,
                                      extensions={'sni_hostname': host}) as response:
                 chunks = bytearray()
                 async for chunk in response.aiter_bytes():

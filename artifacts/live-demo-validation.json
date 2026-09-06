@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "kind": "Real browser form, live local model and NASA source; no simulated provider responses",
+  "case_id": "5746ccd2ac144a0684ec38cadd928735",
+  "status": "needs_review",
+  "verdicts": [
+    "contradicted"
+  ],
+  "elapsed_ms": 12664,
+  "model": "qwen3-4b-local",
+  "source_url": "https://www.nasa.gov/mission/apollo-11/",
+  "demo_strikes_disabled": true,
+  "passed": true
+}

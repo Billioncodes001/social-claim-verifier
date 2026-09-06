@@ -1,4 +1,5 @@
 from typing import Literal
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 ROLES = ('extractor', 'analyst', 'challenger', 'adjudicator')
@@ -37,6 +38,16 @@ class ContentInput(StrictModel):
     allow_external_processing: bool = False
     allow_web_search: bool = False
     language: str = Field(default='en', max_length=32)
+    posted_at: str | None = Field(default=None, max_length=40)
+
+    @field_validator('posted_at')
+    @classmethod
+    def publication_time(cls, value):
+        if value:
+            parsed = datetime.fromisoformat(value.replace('Z', '+00:00'))
+            if parsed.tzinfo is None:
+                raise ValueError('Publication time must include its timezone')
+        return value
 
     @field_validator('text')
     @classmethod
@@ -92,3 +103,43 @@ class PolicyInput(StrictModel):
     window_days: int = Field(default=180, ge=1, le=730)
     admin_threshold: int = Field(default=2, ge=2, le=10)
     senior_threshold: int = Field(default=3, ge=3, le=20)
+
+    @field_validator('senior_threshold')
+    @classmethod
+    def ordered_thresholds(cls, value, info):
+        if value <= info.data.get('admin_threshold', 2):
+            raise ValueError('Senior threshold must exceed the admin threshold')
+        return value
+
+class PlatformProfile(StrictModel):
+    display_name: str = Field(min_length=1, max_length=70)
+    enabled: bool = True
+    allow_hosted: bool = True
+    allow_search: bool = True
+    policy: PolicyInput | None = None
+
+class WorkspaceInput(StrictModel):
+    name: str = Field(default='Claim Verifier', min_length=1, max_length=70)
+    organization: str = Field(default='Moderation workspace', min_length=1, max_length=100)
+    demo_daily_limit: int = Field(default=20, ge=1, le=200)
+
+class SocialAppInput(StrictModel):
+    client_id: str = Field(min_length=1, max_length=300)
+    client_secret: str = Field(default='', max_length=4096)
+    graph_version: str = Field(default='', pattern=r'^(v\d{1,3}\.0)?$')
+
+class DemoInput(StrictModel):
+    platform: Literal['x', 'facebook', 'instagram', 'manual'] = 'manual'
+    text: str = Field(default='', max_length=16000)
+    source_url: str = Field(default='', max_length=2000)
+    post_id: str = Field(default='', max_length=100)
+    evidence_urls: list[str] = Field(default_factory=list, max_length=6)
+    allow_external_processing: bool = False
+    allow_web_search: bool = False
+
+class MonitorInput(StrictModel):
+    enabled: bool = False
+    interval_minutes: int = Field(default=15, ge=5, le=1440)
+    batch_limit: int = Field(default=1, ge=1, le=5)
+    allow_external_processing: bool = False
+    allow_web_search: bool = False

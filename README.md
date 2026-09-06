@@ -2,7 +2,45 @@
 
 A working, privately deployed fact-checking workspace for platform moderation teams. Four AI roles extract claims, analyze retrieved evidence, challenge weak reasoning and produce a cited assessment. Reviewers inspect sources and record decisions or appeals.
 
-**Release status: functional English-text pilot.** The server, dashboard, model connectors, persistent queue, feed workers and tests are implemented. This is not yet an enterprise-scale moderation product or a validated general-purpose truth detector.
+**Release status: v0.2 customer pilot.** Includes customizable platform policies, a real post demo, customer-owned social OAuth apps and a generated server installation. This is not yet an enterprise-scale moderation product or a validated general-purpose truth detector.
+
+## Install on a customer's server
+
+Requires Git, Python 3.11+ and Docker with Compose. The installer itself has no Python dependencies.
+
+```sh
+git clone https://github.com/Billioncodes001/social-claim-verifier.git
+cd social-claim-verifier
+python scripts/deploy.py --domain claims.your-company.com
+docker compose -f .deployment/compose.yaml up -d --build
+```
+
+Point the domain's DNS to the server and allow inbound ports 80/443 before starting. Caddy obtains and renews HTTPS certificates. For a local evaluation, omit `--domain`; the service binds to `127.0.0.1:8791` (`--port` can change that local port).
+
+The installer creates a private `.deployment` directory, random administrator password and encryption key. Read `.deployment/START.txt` and `.deployment/secrets/admin_password` **locally** to sign in as `admin`. A one-shot initializer provisions the persistent volume; the running app is unprivileged and cannot read the bootstrap secrets. Existing bundles are never overwritten. On Windows, restrict access to the directory using your organization's NTFS permissions; POSIX file modes are applied on Linux.
+
+After login, open **Connections** to add/test your AI API, **Agent team** to assign models, and **Workspace setup** to set branding, quotas and platform policies. Configure evidence search or supply original source URLs. `/healthz` reports a live database-backed service; `/readyz` returns 503 until an administrator and four model assignments exist. Readiness checks configuration, not provider availability or factual accuracy.
+
+Upgrade with `git pull` followed by the same Compose command. Keep the existing deployment directory and volume. Back up the database and its matching master key before upgrades. Do not use `down --volumes` on a customer installation. [The CI workflow](.github/workflows/ci.yml) builds the image and exercises provisioning, login, non-root operation and persistence after restart on Linux.
+
+## Try the demo and connect accounts
+
+**Demo lab** works immediately after model configuration: paste post text or a caption, optionally add its original URL, and supply evidence URLs or enable configured search. **Load example** checks a deliberately incorrect Apollo 11 date against NASA. Findings, sources and agent activity appear in the same investigation view. A URL alone does not imply that a post was retrieved.
+
+Under **Platform apps**, administrators enter their own developer app credentials and copy the displayed callback into their developer console. Secrets are encrypted and never returned. Users then authorize their own accounts from Demo lab. The app requests read permissions; social passwords are never collected.
+
+| Platform | Account demo access | Customer requirements |
+| --- | --- | --- |
+| X / Twitter | Personal account OAuth, latest posts or a supplied accessible post URL | OAuth 2.0 app, API access, `tweet.read users.read offline.access`; PKCE and refresh-token rotation supported |
+| Facebook | Connected user's returned posts; URL selection from the recent batch | Facebook Login app, app secret, supported Graph version, `user_posts` permission and any applicable Meta review |
+| Instagram | Business/creator captions; URL selection from the recent batch | Instagram Login app, app secret, supported Graph version, `instagram_business_basic` |
+| Personal Instagram | Paste the caption and original URL | Consumer account feeds are unavailable through this professional-account API |
+
+See the official [X OAuth flow](https://docs.x.com/fundamentals/authentication/oauth-2-0/authorization-code) and [Meta's Instagram Login collection](https://www.postman.com/meta/instagram/folder/6raa77c/instagram-api-with-instagram-login). App approval, access tiers and available content are controlled by each platform. Customer credentials are not bundled. OAuth/token and timeline behavior is exercised with protocol fixtures; a real customer account still needs an acceptance test with its granted permissions. Meta access tokens currently require reconnection when they expire; automatic Meta long-lived token renewal is not implemented.
+
+Connected accounts can fetch up to 10 recent posts and check selected text. Opt-in monitoring persists across server restarts, samples 1–5 latest posts every 5 minutes or longer, and skips unchanged content. It respects the daily per-user demo limit and processing permissions. It is not a complete archive; high-volume accounts can produce more posts than the sample. Connected post caches expire after 24 hours. Disconnect removes local tokens and cached posts; revoke access in the platform's account settings if desired. Existing demo investigations can be deleted separately.
+
+Demo investigations cannot create account strikes. Reviewers see only their own demo cases; administrators can inspect them. Account credentials and cached posts remain private to their owner. Automatic checks require configured evidence search to discover sources; without retrieved evidence, findings stay unresolved. Images, video and audio are not inspected.
 
 ## Run on Windows
 
@@ -75,13 +113,13 @@ The durable connector outbox retains undelivered events and clears delivered pay
 
 Use `--allow-external` and/or `--allow-search` to authorize those operations per connector. Defaults restrict processing to local models and supplied evidence URLs.
 
-The common intake endpoint accepts `manual`, `x`, `facebook`, `instagram`, `whatsapp`, `partner_feed` and `rss`. **Only RSS and X have source workers in this release.** Facebook, Instagram and WhatsApp need a customer-authorized adapter that maps available content to the intake contract. This service has no access to arbitrary private messages or platform-wide feeds.
+The common intake endpoint accepts `manual`, `x`, `facebook`, `instagram`, `whatsapp`, `partner_feed` and `rss`. RSS and X have feed workers; the Demo lab also has account adapters for X, Facebook and professional Instagram accounts. WhatsApp and platform-wide moderation feeds require a customer's authorized ingestion service to map available content to the intake contract. This service has no access to arbitrary private messages or platform-wide feeds.
 
 See [examples/content-event.json](examples/content-event.json). The authenticated OpenAPI contract is at `/api/openapi.json`. The customer's trusted ingestion service is responsible for asserting `author_verified`; browser-entered author references cannot create strikes.
 
 ## Deploy a customer pilot
 
-The Dockerfile and Compose configuration run one workspace with a persistent volume, unprivileged user, read-only application filesystem, dropped capabilities and a loopback-bound port. **Docker is not installed on the development machine; the image has not been built or executed here.**
+Use the generated installation at the top of this README for automatic provisioning and optional HTTPS. The root Compose file remains a minimal option with manual administrator creation:
 
 ```sh
 docker compose up -d --build
@@ -95,7 +133,7 @@ claim-verifier create-user --username reviewer --role reviewer
 claim-verifier reset-password --username owner
 ```
 
-Run **one process per customer**, with one SQLite volume. The pilot permits two simultaneous investigations and 100 queued/processing cases. It does not support multiple service instances sharing a database. SSO, multi-tenant SaaS, distributed queues and high availability remain production work.
+Run **one process per customer**, with one SQLite volume. Defaults allow two simultaneous investigations and 100 queued/processing cases. The generated Compose environment exposes `VERIFIER_WORKERS` (1–16) and `VERIFIER_QUEUE_LIMIT` (1–10,000); increasing them needs capacity testing. **Workspace setup** controls branding, demo quotas and each platform's enabled state, hosted AI permission, search permission and escalation thresholds. It does not support multiple service instances sharing a database. SSO, multi-tenant SaaS, distributed queues and high availability remain production work.
 
 Back up the database and key together using encrypted, retention-controlled storage. Logical deletion removes content from active records; already-transmitted provider requests, old backups and filesystem remnants need separate storage/provider retention controls. Audit history is application-managed, not an immutable external ledger. Evidence can become stale and require re-investigation.
 
@@ -105,9 +143,10 @@ Back up the database and key together using encrypted, retention-controlled stor
 python -m pytest -q
 python scripts/live_validation.py
 node --check verifier/static/app.js
+node --check verifier/static/demo.js
 ```
 
-Tests cover authorization, secret handling, body/network limits, provider protocols, fallbacks, citation integrity, abstention, claim completeness, idempotency, edits, deletion races, incidents, appeals, restart recovery and connector delivery.
+Tests cover authorization, secret handling, body/network limits, provider protocols, fallbacks, citation integrity, abstention, claim completeness, idempotency, edits, deletion races, incidents, appeals, restart recovery, connector delivery, OAuth session binding/replay, connected-post normalization, polling consent, demo privacy/quotas, platform policies, schema migration and server provisioning. GitHub Actions runs the regression suite on Windows and Linux plus an actual Docker installation smoke test.
 
 [artifacts/live-validation.json](artifacts/live-validation.json) records real HTTP/model/source runs: a false historical date, a correct date, missing evidence, opinion and an embedded malicious instruction. The script creates a development owner only in a fresh workspace and otherwise uses saved development credentials. Run it only in development. [artifacts/live-feed-validation.json](artifacts/live-feed-validation.json) records the separate live RSS intake check.
 

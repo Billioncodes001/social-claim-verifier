@@ -1,5 +1,5 @@
 {
-  "regression_tests_passed": 56,
+  "regression_tests_passed": 74,
   "live_model_cases_passed": 5,
   "live_rss_intake_and_analysis": "passed",
   "browser": {
@@ -19,8 +19,11 @@
   ],
   "not_live_tested": [
     "Hosted OpenAI/Anthropic/Tavily credentials were unavailable; adapters were protocol-tested.",
-    "X requires customer credentials and configured rules; adapter was fixture-tested.",
-    "Docker runtime unavailable; container execution not tested."
+    "Customer X/Meta developer credentials were not supplied. OAuth, tokens, timelines and monitoring were fixture-tested.",
+    "Domain DNS and public TLS certificate issuance require a customer deployment."
   ],
-  "readiness": "Working English-text pilot; integration checks do not establish broad factual accuracy or enterprise readiness."
+  "readiness": "Working English-text pilot; integration checks do not establish broad factual accuracy or enterprise readiness.",
+  "version": "0.2.0",
+  "live_demo": "passed",
+  "container_validation": "See Verify and install GitHub Actions; pending first run"
 }

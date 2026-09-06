@@ -10,6 +10,140 @@
   --dark: #142c27;
   --red: #a53532;
 }
+.demo-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 28px;
+  padding: 30px 34px;
+  margin-bottom: 24px;
+  background: var(--dark);
+  color: white;
+  border-radius: 12px;
+}
+.demo-banner h2 {
+  font-size: 30px;
+  margin: 8px 0 12px;
+}
+.demo-banner p {
+  max-width: 580px;
+  color: #d3e1d7;
+  margin: 0;
+}
+.demo-banner .eyebrow {
+  color: var(--lime);
+}
+.demo-steps {
+  display: grid;
+  gap: 14px;
+  min-width: 130px;
+  color: var(--lime);
+  font-size: 13px;
+}
+.social-choice {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+.social-choice:first-of-type {
+  padding-top: 5px;
+}
+.social-choice:last-of-type {
+  border: 0;
+}
+.social-choice p {
+  font-size: 13px;
+  margin: 0 0 10px;
+}
+.social-choice .panelhead {
+  margin-bottom: 10px;
+}
+.connected-account {
+  padding: 22px 0;
+  border-top: 1px solid var(--line);
+}
+.monitor-settings {
+  margin: 20px 0;
+}
+.monitor-settings summary,
+.platform-profile summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 12px 0;
+}
+.monitor-settings form {
+  padding-top: 10px;
+}
+.account-footer {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.post-candidate {
+  margin-top: 20px;
+  padding: 22px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.post-candidate > p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.demo-case {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.demo-case .case-row {
+  flex: 1;
+  min-width: 0;
+}
+.platform-app-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+.platform-app-grid .panel {
+  min-width: 0;
+}
+.platform-profile {
+  border-top: 1px solid var(--line);
+  padding: 8px 0;
+}
+.platform-profile form {
+  max-width: 800px;
+  padding: 16px 0;
+}
+.readiness-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 13px 0;
+}
+.readiness-icon {
+  font-size: 18px;
+  color: var(--orange);
+}
+.readiness-icon.ok {
+  color: var(--green);
+}
+@media (max-width: 1150px) {
+  .platform-app-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 700px) {
+  .demo-banner {
+    padding: 24px;
+  }
+  .demo-steps {
+    display: none;
+  }
+  .account-footer {
+    align-items: start;
+    flex-direction: column;
+  }
+}
 * {
   box-sizing: border-box;
 }

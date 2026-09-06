@@ -38,7 +38,17 @@ class Database:
             CREATE INDEX IF NOT EXISTS cases_status ON cases(status,created);
             CREATE INDEX IF NOT EXISTS cases_author ON cases(platform,author_ref);
             CREATE INDEX IF NOT EXISTS runs_case ON runs(case_id,created);
+            CREATE TABLE IF NOT EXISTS oauth_states(digest TEXT PRIMARY KEY,provider TEXT NOT NULL,owner_id TEXT NOT NULL,session_digest TEXT NOT NULL,binding_digest TEXT NOT NULL,verifier TEXT NOT NULL,app_revision TEXT NOT NULL,expires REAL NOT NULL);
+            CREATE TABLE IF NOT EXISTS social_accounts(id TEXT PRIMARY KEY,owner_id TEXT NOT NULL,provider TEXT NOT NULL,remote_id TEXT NOT NULL,display_name TEXT NOT NULL,secret TEXT NOT NULL,expires REAL NOT NULL,scopes TEXT NOT NULL,status TEXT NOT NULL,last_sync TEXT,error TEXT,monitor TEXT NOT NULL,next_poll REAL NOT NULL,UNIQUE(owner_id,provider,remote_id));
+            CREATE TABLE IF NOT EXISTS social_posts(id TEXT PRIMARY KEY,account_id TEXT NOT NULL REFERENCES social_accounts(id) ON DELETE CASCADE,remote_id TEXT NOT NULL,text TEXT NOT NULL,source_url TEXT NOT NULL,posted_at TEXT,seen_at TEXT NOT NULL,UNIQUE(account_id,remote_id));
             ''')
+            columns = {row['name'] for row in db.execute('PRAGMA table_info(cases)')}
+            if 'is_demo' not in columns:
+                db.execute('ALTER TABLE cases ADD COLUMN is_demo INTEGER NOT NULL DEFAULT 0')
+            if 'owner_id' not in columns:
+                db.execute('ALTER TABLE cases ADD COLUMN owner_id TEXT')
+            db.execute('CREATE INDEX IF NOT EXISTS cases_demo_owner ON cases(is_demo,owner_id,created)')
+            db.execute('PRAGMA user_version=2')
 
     @contextmanager
     def connect(self):

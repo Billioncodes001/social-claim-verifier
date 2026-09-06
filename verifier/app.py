@@ -15,7 +15,10 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from .db import Database, now, uid, dumps
 from .security import Vault, hash_password, verify_password, digest
-from .models import Credentials, ConnectionInput, RoleInput, ContentInput, DecisionInput, TokenInput, SearchInput, PolicyInput, ROLES
+from .models import Credentials, ConnectionInput, RoleInput, ContentInput, DecisionInput, TokenInput, SearchInput, PolicyInput, ROLES, WorkspaceInput, PlatformProfile
+from .intake import enqueue
+from .configuration import bootstrap, readiness, workspace_config, profile, PLATFORMS
+from .social import Social, SocialError, social_router
 from .providers import Providers, ProviderError
 from .evidence import Evidence
 from .pipeline import Pipeline
@@ -27,22 +30,30 @@ STATIC = Path(__file__).parent / 'static'
 def create_app(data_dir=None, run_workers=True):
     root = Path(data_dir or os.environ.get('VERIFIER_DATA_DIR', '.runtime')).resolve()
     db = Database(root)
+    bootstrap(db)
     vault = Vault(root)
     providers = Providers(db, vault)
     evidence = Evidence(db, vault)
     pipeline = Pipeline(db, providers, evidence)
+    social = Social(db, vault)
     login_attempts = {}
 
     @asynccontextmanager
     async def lifespan(app):
         if run_workers:
             pipeline.start()
+            social.start()
         yield
         await pipeline.stop()
+        await social.stop()
 
-    app = FastAPI(title='Claim Verifier', version='0.1.0', lifespan=lifespan,
+    app = FastAPI(title='Claim Verifier', version='0.2.0', lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.db, app.state.vault, app.state.pipeline = db, vault, pipeline
+    app.state.social = social
+    @app.exception_handler(SocialError)
+    async def social_error(request, exc):
+        return JSONResponse({'detail':str(exc)}, status_code=422)
     @app.exception_handler(RequestValidationError)
     async def invalid_input(request, exc):
         # Validation errors must not echo submitted keys, passwords, or content.
@@ -100,9 +111,9 @@ def create_app(data_dir=None, run_workers=True):
         db.execute('INSERT INTO sessions VALUES(?,?,?)', (digest(token), actor_id, time.time()+43200))
         response.set_cookie('cv_session', token, httponly=True, samesite='strict', secure=os.environ.get('VERIFIER_SECURE_COOKIES') == '1', max_age=43200)
 
-    def find_case(case_id):
+    def find_case(case_id, actor=None):
         row = db.one('SELECT * FROM cases WHERE id=?', (case_id,))
-        if not row:
+        if not row or (row['is_demo'] and actor and actor['role'] != 'admin' and row['owner_id'] != actor['id']):
             raise HTTPException(404, 'Case not found')
         return row
 
@@ -112,7 +123,33 @@ def create_app(data_dir=None, run_workers=True):
     @app.get('/healthz')
     async def health():
         db.one('SELECT 1')
-        return {'status': 'ok', 'version': '0.1.0'}
+        return {'status': 'ok', 'version': '0.2.0'}
+
+    @app.get('/readyz')
+    async def ready():
+        state = readiness(db)
+        return JSONResponse({'ready':state['ready'],'version':'0.2.0'}, status_code=200 if state['ready'] else 503)
+
+    @app.get('/api/workspace')
+    async def workspace(actor=Depends(user)):
+        return {'workspace':workspace_config(db),'platforms':{key:profile(db,key) for key in PLATFORMS}}
+
+    @app.put('/api/workspace')
+    async def workspace_update(body:WorkspaceInput,actor=Depends(admin)):
+        db.set_setting('workspace',body.model_dump())
+        db.audit(actor['username'],'workspace.updated','workspace',body.model_dump())
+        return {'ok':True}
+
+    @app.get('/api/deployment')
+    async def deployment(actor=Depends(admin)):
+        return readiness(db)
+
+    @app.put('/api/platforms/{platform}')
+    async def platform_update(platform:str,body:PlatformProfile,actor=Depends(admin)):
+        if platform not in PLATFORMS: raise HTTPException(404,'Unknown platform')
+        db.set_setting('platform:'+platform,body.model_dump())
+        db.audit(actor['username'],'platform.updated',platform,body.model_dump())
+        return {'ok':True}
 
     @app.get('/api/auth/status')
     async def auth_status(request: Request):
@@ -164,7 +201,8 @@ def create_app(data_dir=None, run_workers=True):
 
     @app.get('/api/dashboard')
     async def dashboard(actor=Depends(user)):
-        statuses = {row['status']: row['n'] for row in db.all('SELECT status,COUNT(*) AS n FROM cases GROUP BY status')}
+        scope, values = ('1=1', ()) if actor['role']=='admin' else ('(is_demo=0 OR owner_id=?)', (actor['id'],))
+        statuses = {row['status']: row['n'] for row in db.all('SELECT status,COUNT(*) AS n FROM cases WHERE '+scope+' GROUP BY status', values)}
         authors = db.all("SELECT DISTINCT platform,author_ref FROM cases WHERE author_verified=1 AND author_ref!=''")
         accounts = [account_state(db, row['platform'], row['author_ref']) for row in authors]
         escalations = [row for row in accounts if row['escalation'] != 'monitor']
@@ -177,6 +215,8 @@ def create_app(data_dir=None, run_workers=True):
     @app.get('/api/cases')
     async def cases(status: str = '', q: str = '', actor=Depends(user)):
         conditions, params = [], []
+        if actor['role'] != 'admin':
+            conditions.append('(is_demo=0 OR owner_id=?)'); params.append(actor['id'])
         if status:
             conditions.append('status=?'); params.append(status)
         if q:
@@ -190,7 +230,7 @@ def create_app(data_dir=None, run_workers=True):
 
     @app.get('/api/cases/{case_id}')
     async def case_detail(case_id: str, actor=Depends(user)):
-        row = find_case(case_id)
+        row = find_case(case_id, actor)
         row['input'] = json.loads(row['input'])
         row['result'] = json.loads(row['result']) if row['result'] else None
         row['runs'] = db.all('SELECT * FROM runs WHERE case_id=? ORDER BY created', (case_id,))
@@ -204,55 +244,11 @@ def create_app(data_dir=None, run_workers=True):
 
     @app.post('/api/content-events', status_code=202)
     async def intake(body: ContentInput, actor=Depends(ingest_actor)):
-        if body.event_type != 'deleted' and not body.text:
-            raise HTTPException(422, 'Submit the post text. Private or dynamic social URLs cannot be read as a substitute.')
-        for url in body.evidence_urls + ([body.source_url] if body.source_url else []):
-            try:
-                validate_url(url)
-            except NetworkError as exc:
-                raise HTTPException(422, str(exc)) from None
-        content = body.model_dump()
-        # Browser users cannot assert platform-confirmed author identity.
-        if actor['role'] != 'ingest':
-            content['author_verified'] = False
-        encoded = dumps(content)
-        fingerprint = hashlib.sha256(encoded.encode()).hexdigest()
-        with db.connect() as tx:
-            tx.execute('BEGIN IMMEDIATE')
-            existing = tx.execute('SELECT * FROM events WHERE event_id=?', (body.event_id,)).fetchone()
-            if existing:
-                if existing['digest'] != fingerprint:
-                    raise HTTPException(409, 'Event ID already used for different content')
-                return {'case_id': existing['case_id'], 'duplicate': True}
-            latest = tx.execute('SELECT * FROM cases WHERE platform=? AND content_id=? ORDER BY revision DESC LIMIT 1', (body.platform, body.content_id)).fetchone()
-            if latest and body.revision <= latest['revision']:
-                raise HTTPException(409, 'Content revision must increase; stale or duplicate revision rejected')
-            if body.event_type != 'deleted' and tx.execute("SELECT COUNT(*) FROM cases WHERE status IN ('queued','processing')").fetchone()[0] >= 100:
-                raise HTTPException(429, 'Queue is full. Retry later with the same event ID.')
-            if latest:
-                tx.execute("UPDATE cases SET status='superseded',stage='Replaced by a newer revision',updated=? WHERE platform=? AND content_id=? AND status!='deleted'", (now(), body.platform, body.content_id))
-            if body.event_type == 'deleted':
-                older = tx.execute('SELECT id,input FROM cases WHERE platform=? AND content_id=?', (body.platform, body.content_id)).fetchall()
-                for old in older:
-                    retained = json.loads(old['input'])
-                    retained.update(text='', evidence_urls=[], source_url='', author_ref='', author_verified=False)
-                    tx.execute("UPDATE cases SET status='deleted',stage='Content removed',input=?,result=NULL,error=NULL,author_ref='',author_verified=0,updated=? WHERE id=?", (dumps(retained), now(), old['id']))
-                    tx.execute('DELETE FROM runs WHERE case_id=?', (old['id'],))
-                    tx.execute('DELETE FROM reviews WHERE case_id=?', (old['id'],))
-                    tx.execute("UPDATE audit SET details='{}' WHERE subject=?", (old['id'],))
-                content.update(text='', evidence_urls=[], source_url='', author_ref='', author_verified=False)
-                encoded = dumps(content)
-            case_id, stamp = uid(), now()
-            state = 'deleted' if body.event_type == 'deleted' else 'queued'
-            tx.execute('INSERT INTO cases(id,platform,content_id,revision,author_ref,author_verified,status,stage,input,created,updated) VALUES(?,?,?,?,?,?,?,?,?,?,?)',
-                       (case_id, body.platform, body.content_id, body.revision, content['author_ref'], content['author_verified'], state, 'Deleted' if state == 'deleted' else 'Waiting for agents', encoded, stamp, stamp))
-            tx.execute('INSERT INTO events VALUES(?,?,?)', (body.event_id, fingerprint, case_id))
-        db.audit(actor['username'], 'content.'+body.event_type, case_id, {'platform': body.platform, 'revision': body.revision})
-        return {'case_id': case_id, 'duplicate': False}
+        return enqueue(db, body, actor)
 
     @app.post('/api/cases/{case_id}/retry')
     async def retry(case_id: str, actor=Depends(user)):
-        row = find_case(case_id)
+        row = find_case(case_id, actor)
         if row['status'] != 'blocked':
             raise HTTPException(409, 'Only blocked cases can be retried')
         db.execute("UPDATE cases SET status='queued',stage='Waiting for agents',error=NULL,result=NULL,updated=? WHERE id=? AND status='blocked'", (now(), case_id))
@@ -267,6 +263,8 @@ def create_app(data_dir=None, run_workers=True):
             if not current:
                 raise HTTPException(404, 'Case not found')
             row = dict(current)
+            if row['is_demo'] and actor['role']!='admin' and row['owner_id']!=actor['id']:
+                raise HTTPException(404, 'Case not found')
             if row['status'] not in ('needs_review', 'reviewed'):
                 raise HTTPException(409, 'This version is not eligible for review')
             previous = tx.execute('SELECT * FROM reviews WHERE case_id=?', (case_id,)).fetchone()
@@ -394,6 +392,7 @@ def create_app(data_dir=None, run_workers=True):
         return JSONResponse(value, headers={'Content-Disposition': f'attachment; filename="case-{case_id}.json"'})
 
     app.mount('/assets', StaticFiles(directory=STATIC), name='assets')
+    app.include_router(social_router(social,user,admin))
 
     @app.get('/')
     async def index():

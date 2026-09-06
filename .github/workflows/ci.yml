@@ -1,0 +1,55 @@
+name: Verify and install
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  regression:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m pip install -r requirements.lock
+      - run: python -m pip install -e ".[test]"
+      - run: python -m pytest -q --tb=short --junitxml=artifacts/ci-regression.xml
+      - run: node --check verifier/static/app.js
+      - run: node --check verifier/static/demo.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: regression-${{ matrix.os }}
+          path: artifacts/ci-regression.xml
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install httpx==0.28.1
+      - run: python scripts/deploy.py
+      - run: docker compose -f .deployment/compose.yaml up -d --build
+      - run: python scripts/container_smoke.py
+      - name: Verify non-root runtime and data across restart
+        run: |
+          test "$(docker compose -f .deployment/compose.yaml exec -T verifier id -u)" = 10001
+          docker compose -f .deployment/compose.yaml restart verifier
+          python scripts/container_smoke.py --after-restart --report artifacts/container-restart-validation.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: container-validation
+          path: artifacts/container*validation.json
+      - name: Stop test installation
+        if: always()
+        run: docker compose -f .deployment/compose.yaml down

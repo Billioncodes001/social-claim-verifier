@@ -107,11 +107,14 @@ function nav(route) {
 function shell() {
   const links = [
     ["overview", "◫", "Overview"],
+    ["demo", "▷", "Demo lab"],
     ["queue", "☷", "Review queue"],
     ["investigate", "⌕", "Investigate"],
     ["agents", "◇", "Agent team"],
   ];
   const settings = [
+    ["deployment", "▦", "Workspace setup"],
+    ["socialapps", "↗", "Platform apps"],
     ["connections", "⇄", "Connections"],
     ["integrations", "⌘", "Integrations"],
     ["policy", "⊙", "Policy"],
@@ -119,7 +122,7 @@ function shell() {
   ];
   const item = ([id, icon, name]) =>
     `<a href="#${id}" class="${state.route === id ? "active" : ""}"><span class="nav-icon">${icon}</span>${name}</a>`;
-  app.innerHTML = `<div class="layout"><aside class="sidebar"><div class="brand"><span class="logo">cv</span>Claim Verifier</div><div class="nav-label">Workspace</div><nav class="nav">${links.map(item).join("")}</nav>${state.user.role === "admin" ? `<div class="nav-label">Administration</div><nav class="nav">${settings.map(item).join("")}</nav>` : ""}<div class="sidebar-bottom"><span class="dot"></span>Private workspace<br><small>Evidence-backed review · v0.1</small></div></aside><main class="main"><header class="topbar"><div class="topbar-left"><span class="workspace-icon">▦</span><strong>Moderation workspace</strong></div><div class="topbar-right"><span class="pill">Human review enabled</span><span class="avatar">${esc(state.user.username[0].toUpperCase())}</span><span>${esc(state.user.username)}</span><button id="logout">Sign out</button></div></header><div class="content" id="view"></div></main></div>`;
+  app.innerHTML = `<div class="layout"><aside class="sidebar"><div class="brand"><span class="logo">cv</span>${esc(state.workspace?.name || "Claim Verifier")}</div><div class="nav-label">Workspace</div><nav class="nav">${links.map(item).join("")}</nav>${state.user.role === "admin" ? `<div class="nav-label">Administration</div><nav class="nav">${settings.map(item).join("")}</nav>` : ""}<div class="sidebar-bottom"><span class="dot"></span>Private workspace<br><small>Evidence-backed review · v0.2</small></div></aside><main class="main"><header class="topbar"><div class="topbar-left"><span class="workspace-icon">▦</span><strong>${esc(state.workspace?.organization || "Moderation workspace")}</strong></div><div class="topbar-right"><span class="pill">Human review enabled</span><span class="avatar">${esc(state.user.username[0].toUpperCase())}</span><span>${esc(state.user.username)}</span><button id="logout">Sign out</button></div></header><div class="content" id="view"></div></main></div>`;
   document.querySelector("#logout").onclick = async () => {
     await send("/auth/logout", {});
     state.user = null;
@@ -376,7 +379,7 @@ async function integrations() {
       "Platform integrations",
       "Feed authorized content into the same verification pipeline.",
     ) +
-    `<div class="grid2"><section class="panel"><h2>Integration tokens</h2><p class="muted">Tokens can submit events. They cannot view cases, change policy, or manage model keys.</p><form id="token-form"><div class="field"><label for="token-name">Integration name</label><input id="token-name" name="name" required placeholder="e.g. Platform staging feed"></div><button type="submit">Create token</button></form><div id="new-token"></div><div class="table-wrap"><table><thead><tr><th>Name</th><th>Created</th><th></th></tr></thead><tbody>${tokens.map((t) => `<tr><td>${esc(t.name)}</td><td>${stamp(t.created)}</td><td><button class="secondary small" data-revoke="${t.id}">Revoke</button></td></tr>`).join("")}</tbody></table></div></section><section class="panel"><div class="eyebrow">Partner API</div><h2>One event contract</h2><p>Send a bearer-authenticated request to <code>POST /api/content-events</code>.</p><pre>${esc(JSON.stringify({ event_id: "unique-event-id", platform: "partner_feed", content_id: "post-123", revision: 1, text: "The original post text", author_ref: "verified-platform-id", author_verified: true, evidence_urls: [], allow_external_processing: false, allow_web_search: false }, null, 2))}</pre><p class="muted">Reusing an event ID with the same payload is safe. Edits and deletions require an increasing revision. Set event_type to edited or deleted.</p><a href="/api/openapi.json" target="_blank">Open API specification ↗</a><div class="notice">The intake contract supports X, Facebook, Instagram, WhatsApp and partner feeds. Access to a platform's content still requires its authorization. An X filtered-stream worker and RSS monitor are included. Facebook, Instagram and WhatsApp need a customer-authorized adapter to submit this event contract. Account actions are not connected.</div></section></div>`;
+    `<div class="grid2"><section class="panel"><h2>Integration tokens</h2><p class="muted">Tokens can submit events. They cannot view cases, change policy, or manage model keys.</p><form id="token-form"><div class="field"><label for="token-name">Integration name</label><input id="token-name" name="name" required placeholder="e.g. Platform staging feed"></div><button type="submit">Create token</button></form><div id="new-token"></div><div class="table-wrap"><table><thead><tr><th>Name</th><th>Created</th><th></th></tr></thead><tbody>${tokens.map((t) => `<tr><td>${esc(t.name)}</td><td>${stamp(t.created)}</td><td><button class="secondary small" data-revoke="${t.id}">Revoke</button></td></tr>`).join("")}</tbody></table></div></section><section class="panel"><div class="eyebrow">Partner API</div><h2>One event contract</h2><p>Send a bearer-authenticated request to <code>POST /api/content-events</code>.</p><pre>${esc(JSON.stringify({ event_id: "unique-event-id", platform: "partner_feed", content_id: "post-123", revision: 1, text: "The original post text", author_ref: "verified-platform-id", author_verified: true, evidence_urls: [], allow_external_processing: false, allow_web_search: false }, null, 2))}</pre><p class="muted">Reusing an event ID with the same payload is safe. Edits and deletions require an increasing revision. Set event_type to edited or deleted.</p><a href="/api/openapi.json" target="_blank">Open API specification ↗</a><div class="notice">The intake contract supports X, Facebook, Instagram, WhatsApp and partner feeds. Access to a platform's content still requires its authorization. An X filtered-stream worker and RSS monitor are included. The Demo lab includes customer-authorized account adapters for X, Facebook and professional Instagram accounts. WhatsApp and platform-wide feeds need a customer ingestion service to submit this event contract. Account actions are not connected.</div></section></div>`;
   bindForm("#token-form", async (f) => {
     const r = await send("/tokens", { name: f.get("name") });
     document.querySelector("#new-token").innerHTML =
@@ -431,7 +434,7 @@ async function detail(id, repeat = false) {
       "Claims, original evidence, and every agent’s contribution.",
       `<a href="/api/cases/${c.id}/export" class="tag">Export case JSON ↓</a>`,
     ) +
-    `<section class="detail-head"><div class="detail-meta">${tag(c.status)}<span>${esc(c.platform)}</span><span>${stamp(c.created)}</span><span>Revision ${c.revision}</span>${c.input.source_url ? `<a ${external(c.input.source_url)}>Original post ↗</a>` : ""}</div><div class="detail-post">${esc(c.input.text || "Content deleted")}</div><div class="detail-meta">${c.author_ref ? `<span>Author: ${esc(c.author_ref)}</span><span>${c.author_verified ? "Platform-verified identity" : "Unverified reference"}</span>` : ""}<span>${esc(c.stage)}</span></div>${c.error ? `<div class="notice error">${esc(c.error)}</div><button id="retry" class="secondary">Retry investigation</button>` : ""}</section><div class="grid2"><div><section class="panel"><h2>Claim assessments</h2>${
+    `${c.is_demo ? '<div class="notice">Demo investigation · This check cannot create an account strike. <a href="#demo">Return to demo lab →</a></div>' : ""}<section class="detail-head"><div class="detail-meta">${tag(c.status)}<span>${esc(c.platform)}</span><span>${stamp(c.created)}</span><span>Revision ${c.revision}</span>${c.input.source_url ? `<a ${external(c.input.source_url)}>Original post ↗</a>` : ""}</div><div class="detail-post">${esc(c.input.text || "Content deleted")}</div><div class="detail-meta">${c.author_ref ? `<span>Author: ${esc(c.author_ref)}</span><span>${c.author_verified ? "Platform-verified identity" : "Unverified reference"}</span>` : ""}<span>${esc(c.stage)}</span></div>${c.error ? `<div class="notice error">${esc(c.error)}</div><button id="retry" class="secondary">Retry investigation</button>` : ""}</section><div class="grid2"><div><section class="panel"><h2>Claim assessments</h2>${
       r
         ? r.judgments
             .map((j) => {
@@ -480,8 +483,9 @@ function auth(setup) {
 async function route() {
   if (!state.user) return;
   clearInterval(state.poll);
-  const value = location.hash.slice(1) || "overview";
+  const value = location.hash.slice(1).split("?")[0] || "overview";
   state.route = value.startsWith("case/") ? "queue" : value;
+  state.workspace = (await api("/workspace")).workspace;
   shell();
   try {
     if (value.startsWith("case/")) await detail(value.split("/")[1]);
@@ -489,6 +493,9 @@ async function route() {
       await (
         {
           overview,
+          demo,
+          deployment,
+          socialapps,
           queue,
           investigate,
           agents,
@@ -514,4 +521,4 @@ async function start() {
     app.innerHTML = `<div class="boot">${esc(e.message)}</div>`;
   }
 }
-start();
+document.addEventListener("DOMContentLoaded", start);
