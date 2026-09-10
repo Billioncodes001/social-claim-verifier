@@ -115,6 +115,25 @@ export type Review = {
   incident_key: string;
 };
 export type CaseDetail = CaseSummary & {
+  evidence_review: {
+    as_of: string;
+    stale_after_days: number;
+    sources: {
+      evidence_id: string;
+      age_days: number | null;
+      computed_sha256: string | null;
+      warnings: string[];
+      source_changes: {
+        case_id: string;
+        revision: number;
+        evidence_id: string;
+        sha256: string;
+        retrieved_at: string | null;
+      }[];
+    }[];
+    related_revisions: { case_id: string; revision: number }[];
+    limits: string[];
+  };
   revision: number;
   stage: string;
   error?: string;

@@ -32,6 +32,31 @@ _The working Demo lab interface. No real social account or hosted model was conn
 
 The current product assesses **text and captions in an English-text pilot**. It does not analyze images, video or audio, determine whether a person intended to lie, or access a platform's entire user-content feed. Platform access comes from the customer's authorized integrations.
 
+## Local evidence review
+
+Open a saved investigation and inspect **Source library → Evidence freshness & revisions**. Read-only warnings identify captures at least 30 days old (an explicit review reminder, not a truth/freshness score), future/missing/invalid capture times, unavailable evidence and missing or mismatched text hashes. Publication dates are preserved separately; old publication alone does not make a claim outdated.
+
+Exact source URLs are compared with the nearest earlier and latest later saved assessments **of this same content**, within its existing demo-owner boundary. Different captured text is flagged with a link to the saved content revision. This does not monitor the web, discover edits, compare unrelated investigations or infer that a changed source is correct. Unchanged hashes do not certify accuracy or currency. Superseded assessments retain their original findings and cannot become a decision on newer content.
+
+**Human-review packet** downloads a versioned JSON envelope containing original submitted content, captured evidence and hashes, claims/citations, saved agent outputs/models, the current human decision, source-change hashes/references, the warning policy and explicit review time. Capture/review/history reads use one SQLite snapshot. Existing **Export report** remains available. Admin/reviewer and private-demo access rules are unchanged; no provider secrets or login credentials are included.
+
+The packet has an unkeyed SHA-256 checksum of its `payload`. Reproduce it with Python:
+
+```python
+import hashlib, json
+from pathlib import Path
+packet = json.loads(Path("review-packet.json").read_text(encoding="utf-8"))
+canonical = json.dumps(packet["payload"], sort_keys=True, ensure_ascii=False,
+                       separators=(",", ":"), allow_nan=False).encode("utf-8")
+assert hashlib.sha256(canonical).hexdigest() == packet["integrity"]["sha256"]
+```
+
+The authenticated `/api/cases/{id}/review-export?as_of=<timezone-aware ISO timestamp>` endpoint freezes the warning evaluation time; repeated requests are identical only while the saved case/review/related evidence is unchanged. It is **not** historical database time travel or a replay of nondeterministic models. Retain the downloaded packet to preserve that snapshot. Checksums detect accidental changes, not authorship or authenticity. Exports contain sensitive case data and are not encrypted, signed, database backups or remotely revocable after content deletion. Citation gates, abstention, role controls and account-action restrictions are untouched. No schema migration or external call is required for this feature.
+
+![Evidence freshness and local source revisions in the working desktop interface](docs/freshness-1440.png)
+
+_Actual local browser capture using deliberately old, changed synthetic evidence and an unresolved fixture verdict. No live fact-checking, account access or accuracy evaluation. [Phone capture](docs/freshness-390.png)._
+
 ## How an investigation works
 
 1. **Intake:** accept content and its revision through the workspace, Demo lab or integration API.
@@ -308,6 +333,8 @@ The Apollo 11 images illustrate the supplied NASA example: [Earth above the luna
 [artifacts/live-validation.json](artifacts/live-validation.json) records real HTTP/model/source runs: a false historical date, a correct date, missing evidence, opinion and an embedded malicious instruction. The script creates a development owner only in a fresh workspace and otherwise uses saved development credentials. Run it only in development. [artifacts/live-feed-validation.json](artifacts/live-feed-validation.json) records the separate live RSS intake check.
 
 The recorded baseline has 74 backend tests and eight browser scenarios, plus a real local-model/source smoke evaluation and container provisioning/restart checks. See the [verification summary](artifacts/verification-summary.json), [interface validation](artifacts/web-interface-validation.json) and [container validation](artifacts/container-validation.json) for exact scope and tested revisions.
+
+The local evidence-review enhancement was independently tested with **83 passing backend cases and 10 passing browser scenarios**, including both new desktop/phone workflows, full JSON downloads, role/privacy restrictions, source revision links, reload, WCAG A/AA checks and overflow checks. The typechecked production build passed. Run the isolated UI suite using `PLAYWRIGHT_CHANNEL=chrome VERIFIER_UI_TEST_PORT=5313 VERIFIER_TEST_PYTHON=.venv/bin/python npm run test:ui` after `npm run build`; the Python override should point at your installed test virtual environment. Existing test-server credentials are synthetic and confined to a temporary database. See [this pass's verification record](docs/EVIDENCE_REVIEW_VERIFICATION.md). No live model/source/platform evaluation, container run or public deployment was performed in this pass.
 
 These are integration smoke checks, **not a representative accuracy benchmark**. Production readiness still requires independent labeled evaluations, measured false-positive rates, stronger-model comparisons, media/adversarial tests, customer platform access, load testing and security review. There is no guaranteed latency or throughput target. Images, video, audio, enforcement, SSO and billing are not implemented.
 

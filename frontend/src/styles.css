@@ -1085,6 +1085,9 @@
     align-items: flex-start;
     margin-bottom: 22px;
   }
+  .page-head:has(.review-export-actions) {
+    flex-direction: column;
+  }
   .page-head h1 {
     font-size: 25px;
   }

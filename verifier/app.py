@@ -21,6 +21,7 @@ from .configuration import bootstrap, readiness, workspace_config, profile, PLAT
 from .social import Social, SocialError, social_router
 from .providers import Providers, ProviderError
 from .evidence import Evidence
+from .review_export import review_snapshot, review_packet
 from .pipeline import Pipeline
 from .policy import account_state, can_confirm, DEFAULT
 from .network import validate_url, NetworkError, pinned_url
@@ -230,14 +231,7 @@ def create_app(data_dir=None, run_workers=True):
 
     @app.get('/api/cases/{case_id}')
     async def case_detail(case_id: str, actor=Depends(user)):
-        row = find_case(case_id, actor)
-        row['input'] = json.loads(row['input'])
-        row['result'] = json.loads(row['result']) if row['result'] else None
-        row['runs'] = db.all('SELECT * FROM runs WHERE case_id=? ORDER BY created', (case_id,))
-        for run in row['runs']:
-            for key in ('output', 'usage'):
-                run[key] = json.loads(run[key]) if run[key] else None
-        row['review'] = db.one('SELECT * FROM reviews WHERE case_id=?', (case_id,))
+        row = review_snapshot(db, case_id, actor, now())
         row['account'] = account_state(db, row['platform'], row['author_ref']) if row['author_ref'] else None
         row['can_confirm'] = can_confirm(row) and row['status'] not in ('superseded', 'deleted')
         return row
@@ -385,6 +379,11 @@ def create_app(data_dir=None, run_workers=True):
         for row in rows:
             row['details'] = json.loads(row['details'])
         return rows
+
+    @app.get('/api/cases/{case_id}/review-export')
+    async def human_review_export(case_id: str, as_of: str | None = None, actor=Depends(user)):
+        value = review_packet(review_snapshot(db, case_id, actor, as_of or now()))
+        return JSONResponse(value, headers={'Content-Disposition': f'attachment; filename="review-{case_id}.json"'})
 
     @app.get('/api/cases/{case_id}/export')
     async def export(case_id: str, actor=Depends(user)):

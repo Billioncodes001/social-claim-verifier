@@ -491,13 +491,27 @@ export function Investigation({ id }: { id: string }) {
         description="The original claim, your agents’ findings and the sources behind them."
         eyebrow={"INVESTIGATION · " + c.id.slice(0, 8).toUpperCase()}
         action={
-          <a
-            className="button button-secondary"
-            href={"/api/cases/" + id + "/export"}
-          >
-            <Download className="size-4" />
-            Export report
-          </a>
+          <div className="review-export-actions flex flex-wrap gap-2">
+            <a
+              className="button button-secondary"
+              href={
+                "/api/cases/" +
+                id +
+                "/review-export?as_of=" +
+                encodeURIComponent(c.evidence_review.as_of)
+              }
+            >
+              <Download className="size-4" />
+              Human-review packet
+            </a>
+            <a
+              className="button button-secondary"
+              href={"/api/cases/" + id + "/export"}
+            >
+              <Download className="size-4" />
+              Export report
+            </a>
+          </div>
         }
       />
       <Card className="original-post">
@@ -623,6 +637,27 @@ export function Investigation({ id }: { id: string }) {
                   title="Source library"
                   description="Original material retrieved for this investigation."
                 />
+                <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+                  <h3 className="font-semibold">
+                    Evidence freshness & revisions
+                  </h3>
+                  <p>
+                    As of {stamp(c.evidence_review.as_of)}. Captures at least{" "}
+                    {c.evidence_review.stale_after_days} days old are flagged
+                    for review, not declared false. No live source check.
+                  </p>
+                  <p>
+                    Comparison uses the nearest earlier and latest later saved
+                    assessments of this content, matching exact source URLs.
+                  </p>
+                  {c.status === "superseded" && (
+                    <p className="font-semibold">
+                      This content revision has been superseded. Its original
+                      assessment is preserved, not a review of the newer
+                      content.
+                    </p>
+                  )}
+                </div>
                 {result.evidence.length ? (
                   result.evidence.map((e) => (
                     <div className="source-record" key={e.id}>
@@ -636,6 +671,37 @@ export function Investigation({ id }: { id: string }) {
                         </div>
                         <Badge value={e.status} />
                       </div>
+                      {c.evidence_review.sources
+                        .filter((s) => s.evidence_id === e.id)
+                        .map((s, index) => (
+                          <div key={index} className="my-3 text-sm leading-6">
+                            {s.warnings.length ? (
+                              <ul className="list-disc space-y-1 pl-5 text-amber-950">
+                                {s.warnings.map((w) => (
+                                  <li key={w}>{w}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p>
+                                No age or integrity warning at this review time.
+                                This does not establish currency or accuracy.
+                              </p>
+                            )}
+                            {s.source_changes.map((change) => (
+                              <p key={change.case_id + change.evidence_id}>
+                                Changed capture:{" "}
+                                <a
+                                  className="underline"
+                                  href={"#case/" + change.case_id}
+                                >
+                                  content revision {change.revision},{" "}
+                                  {change.evidence_id}
+                                </a>
+                                .
+                              </p>
+                            ))}
+                          </div>
+                        ))}
                       {e.error ? (
                         <Notice tone="error">{e.error}</Notice>
                       ) : (

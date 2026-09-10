@@ -10,6 +10,8 @@ from verifier.db import dumps, now
 from verifier.models import ContentInput, MonitorInput
 from verifier.intake import enqueue
 from verifier.security import hash_password
+from verifier.review_export import text_hash
+from datetime import datetime, timezone, timedelta
 
 
 def make_test_app(root):
@@ -26,6 +28,18 @@ def make_test_app(root):
             'evidence':[{'id':'E1','url':'https://www.nasa.gov/mission/apollo-11/','title':'Apollo 11 — browser test fixture','status':'retrieved','text':quote,'host':'www.nasa.gov','retrieved_at':now(),'sha256':'f'*64}],
             'limitations':['Synthetic browser fixture; not a live factual evaluation.'],'elapsed_ms':12500}
     db.execute("UPDATE cases SET status='needs_review',stage='Ready for review',result=? WHERE id=?",(dumps(result),identifier))
+    # Dedicated local-only source revisions for the freshness/export workflow.
+    for revision, text in [(1, 'Synthetic source capture before a local revision.'), (2, 'Synthetic source capture after a local revision.')]:
+        review_id = enqueue(db, ContentInput(event_id=f'freshness-{revision}', content_id='freshness-example',
+            revision=revision, event_type='created' if revision == 1 else 'edited',
+            text='Synthetic freshness review example.'), actor, demo_owner=actor['id'])['case_id']
+        captured = json.loads(dumps(result))
+        captured['evidence'] = [{'id': 'E1', 'url': 'https://evidence.example.test/local-record', 'title': 'Synthetic source revision',
+            'status': 'retrieved', 'text': text, 'sha256': text_hash(text), 'host': 'evidence.example.test',
+            'retrieved_at': (datetime.now(timezone.utc) - timedelta(days=45)).isoformat()}]
+        captured['judgments'] = [{'claim_id': 'C1', 'verdict': 'unresolved', 'rationale': 'Synthetic fixture: no validated factual conclusion.', 'citations': []}]
+        captured['claims'] = [{'id': 'C1', 'text': 'Synthetic freshness review example.', 'context': 'Local test', 'quote': 'Synthetic freshness review example.', 'checkable': True}]
+        db.execute("UPDATE cases SET status='needs_review',stage='Ready for review',result=? WHERE id=?", (dumps(captured), review_id))
     for index,role in enumerate(('extractor','analyst','challenger','adjudicator')):
         db.execute("INSERT INTO runs(id,case_id,role,status,model,output,elapsed_ms,created) VALUES(?,?,?,'complete','browser-fixture',?,?,?)",(role,identifier,role,dumps({'fixture':True}),1000+index,now()))
     db.set_setting('social_app:x',{'client_id':'browser-fixture-app','secret':vault.encrypt('fixture-app-secret'),'graph_version':'','revision':'fixture-revision'})
