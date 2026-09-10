@@ -8,6 +8,14 @@ Claim Verifier turns submitted social content into a reviewable investigation: e
 
 **Release status: v0.3 customer pilot.** Includes a React/TypeScript workspace, Tailwind CSS design system, accessible motion, customizable platform policies, a real post demo, customer-owned social OAuth apps and a generated server installation. This is not yet an enterprise-scale moderation product or a validated general-purpose truth detector.
 
+![Claim Verifier dashboard with workspace navigation and investigation overview](docs/preview.webp)
+
+_Actual React interface captured against the isolated browser-test backend. The account and investigation counts are synthetic fixtures, not customer activity or a live AI evaluation. This image is also used in the portfolio's Work section._
+
+![Claim Verifier Demo lab with the original-post workflow](docs/demo-preview.webp)
+
+_The working Demo lab interface. No real social account or hosted model was connected for these screenshots. Apollo photographs are credited to NASA; see the asset attribution below._
+
 [Use cases](#use-cases) · [Server installation](#install-on-a-customers-server) · [Demo and social accounts](#try-the-demo-and-connect-accounts) · [AI connections](#connect-your-ai-apis) · [API integration](#integrate-a-platform-content-feed) · [Customization](#customize-a-customer-workspace) · [Troubleshooting](#troubleshooting)
 
 ## Use cases
